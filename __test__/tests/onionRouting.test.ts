@@ -21,6 +21,7 @@ import {
   symEncrypt,
 } from "../../src/crypto";
 const { validateEncryption } = require("./utils");
+import crypto from "crypto";
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 

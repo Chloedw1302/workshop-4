@@ -1,44 +1,56 @@
 import bodyParser from "body-parser";
 import express, { Request, Response } from "express";
 import { REGISTRY_PORT } from "../config";
+import crypto from "crypto";
 
 export type Node = { nodeId: number; pubKey: string };
 
-export type GetNodeRegistryBody = {
-  nodes: { nodeId: number; pubKey: string }[];
+export type RegisterNodeBody = {
+  nodeId: number;
+  pubKey: string;
 };
 
+export type GetNodeRegistryBody = {
+  nodes: Node[];
+};
 
-const nodes: Node[] = [];
+const nodeRegistry: Node[] = [];
+const privateKeys: Record<number, string> = {}; // Stocke temporairement les clés privées pour les tests
 
 export async function launchRegistry() {
   const _registry = express();
   _registry.use(express.json());
   _registry.use(bodyParser.json());
 
-  // Route /status
-  _registry.get("/status", (req, res) => {
+  // Endpoint pour vérifier le statut
+  _registry.get("/status", (req: Request, res: Response) => {
     res.send("live");
   });
 
-  // Route /registerNode
-  const nodes: Node[] = [];
+  // Endpoint pour enregistrer un nœud
+  _registry.post("/registerNode", (req: Request, res: Response) => {
+    const { nodeId, pubKey } = req.body as RegisterNodeBody;
+    
+    if (nodeId === undefined || !pubKey) {
+      return res.status(400).json({ error: "Invalid payload" });
+    }
 
-_registry.post("/registerNode", (req: Request, res: Response) => {
-  const { nodeId, pubKey } = req.body;
+    // Vérifie si le nœud est déjà enregistré
+    const existingNode = nodeRegistry.find(node => node.nodeId === nodeId);
+    
+    if (existingNode) {
+      existingNode.pubKey = pubKey; // Mise à jour de la clé publique
+    } else {
+      nodeRegistry.push({ nodeId, pubKey });
+    }
 
-  if (!nodeId || !pubKey) {
-    return res.status(400).send({ error: "Invalid node data" });
-  }
+    return res.status(200).json({ message: "Node registered successfully" });
+  });
 
-  nodes.push({ nodeId, pubKey });
-  return res.status(200).send({ message: "Node registered successfully" });
-}); 
-
-  // Route /getNodeRegistry
+  // Endpoint pour récupérer la liste des nœuds enregistrés
   _registry.get("/getNodeRegistry", (req: Request, res: Response) => {
-    return res.status(200).json({ nodes });
-  });  
+    res.json({ nodes: nodeRegistry });
+  });
 
   const server = _registry.listen(REGISTRY_PORT, () => {
     console.log(`Registry is listening on port ${REGISTRY_PORT}`);

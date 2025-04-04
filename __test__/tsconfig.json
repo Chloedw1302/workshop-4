@@ -5,6 +5,7 @@
     "lib": ["es6"],
     "module": "commonjs",
     "baseUrl": "./",
+    "outDir": "./build",         // <-- Ajout ici
     "paths": {
       "@/*": ["../src/*"]
     },
